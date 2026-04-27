@@ -1,56 +1,102 @@
 @model IEnumerable<ScheduleWeb.Models.Lesson>
 
-<h2>Розклад занять</h2>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary">📅 Розклад занять</h2>
+    <div>
+        <a asp-action="Dictionaries" class="btn btn-outline-primary shadow-sm rounded-pill px-4">
+            📚 Словники (Групи/Викладачі)
+        </a>
+    </div>
+</div>
 
-<form method="get" asp-action="Index" class="mb-4 bg-light p-4 rounded-3 shadow-sm">
+<form method="get" asp-action="Index" class="mb-4 bg-light p-4 rounded-4 shadow-sm border-0">
     <div class="row g-3 align-items-end">
         <div class="col-md-3">
-            <label class="form-label fw-bold">Дата:</label>
-            <input type="date" name="searchDate" class="form-control" />
+            <label class="form-label fw-semibold">Дата:</label>
+            <input type="date" name="searchDate" class="form-control rounded-3" value="@ViewBag.SearchDate" />
         </div>
         <div class="col-md-3">
-            <label class="form-label fw-bold">Предмет:</label>
-            <input type="text" name="searchSubject" class="form-control" placeholder="Пошук за назвою..." />
+            <label class="form-label fw-semibold">Предмет:</label>
+            <input type="text" name="searchSubject" class="form-control rounded-3" placeholder="Пошук за назвою..." value="@ViewBag.SearchSubject" />
         </div>
         <div class="col-md-3">
-            <label class="form-label fw-bold">Викладач:</label>
-            <input type="text" name="searchTeacher" class="form-control" placeholder="ПІБ викладача..." />
+            <label class="form-label fw-semibold">Викладач:</label>
+            <input type="text" name="searchTeacher" class="form-control rounded-3" placeholder="ПІБ викладача..." value="@ViewBag.SearchTeacher" />
         </div>
         <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-primary flex-grow-1">🔍 Знайти</button>
-            <a asp-action="Index" class="btn btn-secondary flex-grow-1">🔄 Очистити</a>
+            <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">🔍 Знайти</button>
+            <a asp-action="Index" class="btn btn-secondary flex-grow-1 rounded-3">🔄 Очистити</a>
         </div>
     </div>
 </form>
 
-<br />
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0 align-middle">
+            <thead class="bg-primary text-white">
+                <tr>
+                    <th class="ps-4">Дата</th>
+                    <th>Час</th>
+                    <th>Предмет</th>
+                    <th>Аудиторія</th>
+                    <th>Викладач</th>
+                    <th>Група</th>
+                    <th class="pe-4 text-center">Тип</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="ps-4">@item.Date.ToString("dd.MM.yyyy")</td>
+                        <td><span class="badge bg-light text-dark border">@item.Time</span></td>
+                        <td class="fw-semibold">@item.Subject</td>
+                        <td>@item.Room</td>
+                        <td>@item.Teacher?.FullName</td>
+                        <td>@item.Group?.Name</td>
+                        <td class="pe-4 text-center">
+                            @if (item.LessonType == "Лекція") { <span class="badge bg-info text-white">Лекція</span> }
+                            else if (item.LessonType == "Практика") { <span class="badge bg-warning text-dark">Практика</span> }
+                            else { <span class="badge bg-secondary">@item.LessonType</span> }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
 
-<table class="table table-bordered">
-    <thead>
-        <tr>
-            <th>Дата</th>
-            <th>Час</th>
-            <th>Предмет</th>
-            <th>Аудиторія</th>
-            <th>Викладач</th>
-            <th>Група</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model)
-        {
-            <tr>
-                <td>@item.Date.ToShortDateString()</td>
-                <td>@item.Time</td>
-                <td>@item.Subject</td>
-                <td>@item.Room</td>
-                <td>@item.Teacher?.FullName</td>
-                <td>@item.Group?.Name</td>
-            </tr>
-        }
-    </tbody>
-</table>
+<div class="d-flex flex-wrap gap-3 align-items-center mb-5">
+    <a asp-action="Create" class="btn btn-success btn-lg shadow-sm px-5 rounded-pill transition-all hover-scale">
+        ➕ Додати заняття
+    </a>
+    
+    <a asp-action="Export" 
+       asp-route-searchDate="@ViewBag.SearchDate" 
+       asp-route-searchSubject="@ViewBag.SearchSubject" 
+       asp-route-searchTeacher="@ViewBag.SearchTeacher" 
+       asp-route-searchGroup="@ViewBag.SearchGroup" 
+       class="btn btn-outline-success btn-lg shadow-sm px-4 rounded-pill">
+        📥 Експорт в Excel
+    </a>
 
-<a asp-action="Create" class="btn btn-success btn-lg shadow-sm px-4 rounded-pill mt-3">
-    ➕ Додати заняття
-</a>
+    <form asp-action="Import" method="post" enctype="multipart/form-data" class="d-flex gap-2 align-items-center">
+        <input type="file" name="file" class="form-control form-control-sm rounded-pill" style="width: 250px;" required />
+        <button type="submit" class="btn btn-outline-dark btn-lg shadow-sm px-4 rounded-pill">
+            📤 Імпорт з Excel
+        </button>
+    </form>
+</div>
+
+<style>
+    .hover-scale:hover {
+        transform: scale(1.03);
+        transition: all 0.2s ease-in-out;
+    }
+    .table thead th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+</style>

@@ -1,0 +1,82 @@
+@{
+    ViewData["Title"] = "Словники";
+}
+
+<div class="container mt-4">
+    <div class="d-flex align-items-center gap-3 mb-4">
+        <a asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3 shadow-sm">
+            ⬅ Назад
+        </a>
+        <h2 class="fw-bold mb-0">📚 Керування групами та викладачами</h2>
+    </div>
+
+    <div class="row g-4">
+        <!-- Секція Груп -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-primary text-white p-4">
+                    <h4 class="mb-0">👥 Навчальні групи</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="AddGroup" method="post" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="name" class="form-control rounded-start-pill px-4" placeholder="Назва нової групи..." required />
+                            <button type="submit" class="btn btn-primary rounded-end-pill px-4">Додати</button>
+                        </div>
+                    </form>
+
+                    <div class="list-group list-group-flush border-top">
+                        @foreach (var group in ViewBag.Groups as List<ScheduleWeb.Models.StudyGroup>)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span>@group.Name</span>
+                                <span class="badge bg-light text-dark border">ID: @group.Id</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секція Викладачів -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-success text-white p-4">
+                    <h4 class="mb-0">👨‍🏫 Викладачі</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="AddTeacher" method="post" class="mb-4">
+                        <div class="input-group">
+                            <input type="text" name="fullName" class="form-control rounded-start-pill px-4" placeholder="ПІБ нового викладача..." required />
+                            <button type="submit" class="btn btn-success rounded-end-pill px-4">Додати</button>
+                        </div>
+                    </form>
+
+                    <div class="list-group list-group-flush border-top">
+                        @foreach (var teacher in ViewBag.Teachers as List<ScheduleWeb.Models.Teacher>)
+                        {
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span>@teacher.FullName</span>
+                                <span class="badge bg-light text-dark border">ID: @teacher.Id</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: transform 0.2s;
+    }
+    .list-group-item {
+        border-color: #f0f0f0;
+    }
+    .input-group .form-control:focus {
+        z-index: 0;
+        box-shadow: none;
+        border-color: #dee2e6;
+    }
+</style>
