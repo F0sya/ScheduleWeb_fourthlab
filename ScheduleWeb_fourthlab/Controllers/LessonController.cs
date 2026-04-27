@@ -15,7 +15,7 @@ public class LessonController : Controller
     // ГОЛОВНА СТОРІНКА (Пошук та Розклад)
     public async Task<IActionResult> Index(DateTime? searchDate, string searchSubject, string searchTeacher, string searchGroup)
     {
-        var query = _context.Lesson
+        var query = _context.Lessons
             .Include(l => l.Teacher)
             .Include(l => l.Group)
             .AsQueryable();
@@ -51,7 +51,7 @@ public class LessonController : Controller
         if (model.LessonType == "Лекція")
         {
             // Шукаємо, чи вже є така лекція
-            var existing = await _context.Lesson
+            var existing = await _context.Lessons
                 .Include(l => l.Group)
                 .FirstOrDefaultAsync(l =>
                     l.Date == model.Date &&

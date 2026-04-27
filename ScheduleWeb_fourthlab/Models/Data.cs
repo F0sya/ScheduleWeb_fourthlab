@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using ScheduleWeb.Models;
 
 namespace ScheduleWeb.Data
@@ -10,6 +10,6 @@ namespace ScheduleWeb.Data
 
         public DbSet<Teacher> Teachers { get; set; }
         public DbSet<StudyGroup> StudyGroups { get; set; }
-        public DbSet<Lesson> Lesson { get; set; }
+        public DbSet<Lesson> Lessons { get; set; }
     }
 }
