@@ -1,0 +1,100 @@
+@model ScheduleWeb.Models.Lesson
+
+@{
+    ViewData["Title"] = "Додати заняття";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+        <div class="card-header bg-primary text-white p-4">
+            <h2 class="mb-0 fw-bold">📅 Додати нове заняття</h2>
+            <p class="mb-0 opacity-75">Заповніть форму нижче, щоб додати заняття до розкладу</p>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <form asp-action="Create" method="post" class="needs-validation">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label asp-for="Date" class="form-label fw-semibold">Дата</label>
+                        <input asp-for="Date" type="date" class="form-control form-control-lg rounded-3 shadow-sm" required />
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Time" class="form-label fw-semibold">Час (напр. 08:30 - 10:05)</label>
+                        <input asp-for="Time" class="form-control form-control-lg rounded-3 shadow-sm" placeholder="08:30 - 10:05" required />
+                    </div>
+
+                    <div class="col-md-12">
+                        <label asp-for="Subject" class="form-label fw-semibold">Предмет</label>
+                        <input asp-for="Subject" class="form-control form-control-lg rounded-3 shadow-sm" placeholder="Назва дисципліни" required />
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="TeacherId" class="form-label fw-semibold">Викладач</label>
+                        <select asp-for="TeacherId" class="form-select form-select-lg rounded-3 shadow-sm" required>
+                            <option value="">-- Оберіть викладача --</option>
+                            @foreach (var teacher in ViewBag.Teachers as List<ScheduleWeb.Models.Teacher>)
+                            {
+                                <option value="@teacher.Id">@teacher.FullName</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="StudyGroupId" class="form-label fw-semibold">Група</label>
+                        <select asp-for="StudyGroupId" class="form-select form-select-lg rounded-3 shadow-sm" required>
+                            <option value="">-- Оберіть групу --</option>
+                            @foreach (var group in ViewBag.Groups as List<ScheduleWeb.Models.StudyGroup>)
+                            {
+                                <option value="@group.Id">@group.Name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Room" class="form-label fw-semibold">Аудиторія</label>
+                        <input asp-for="Room" class="form-control form-control-lg rounded-3 shadow-sm" placeholder="№" required />
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="Week" class="form-label fw-semibold">Тиждень</label>
+                        <select asp-for="Week" class="form-select form-select-lg rounded-3 shadow-sm" required>
+                            <option value="1">1 (Чисельник)</option>
+                            <option value="2">2 (Знаменник)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label asp-for="LessonType" class="form-label fw-semibold">Тип заняття</label>
+                        <select asp-for="LessonType" class="form-select form-select-lg rounded-3 shadow-sm" required>
+                            <option value="Лекція">Лекція</option>
+                            <option value="Практика">Практика</option>
+                            <option value="Лабораторна">Лабораторна</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="mt-5 d-flex gap-3">
+                    <button type="submit" class="btn btn-success btn-lg px-5 rounded-pill shadow-sm transition-all hover-scale">
+                        ✅ Зберегти заняття
+                    </button>
+                    <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-5 rounded-pill shadow-sm">
+                        Скасувати
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-scale:hover {
+        transform: scale(1.02);
+        transition: transform 0.2s ease-in-out;
+    }
+    .card {
+        transition: transform 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+</style>

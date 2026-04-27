@@ -1,13 +1,26 @@
-﻿@model IEnumerable<ScheduleWeb.Models.Lesson>
+@model IEnumerable<ScheduleWeb.Models.Lesson>
 
 <h2>Розклад занять</h2>
 
-<form method="get" action="/Lesson/Index">
-    <label>Дата: <input type="date" name="searchDate" /></label>
-    <label>Предмет: <input type="text" name="searchSubject" /></label>
-    <label>Викладач: <input type="text" name="searchTeacher" /></label>
-    <button type="submit" class="btn btn-primary">Знайти</button>
-    <a href="/Lesson/Index" class="btn btn-secondary">Очистити</a>
+<form method="get" asp-action="Index" class="mb-4 bg-light p-4 rounded-3 shadow-sm">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Дата:</label>
+            <input type="date" name="searchDate" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Предмет:</label>
+            <input type="text" name="searchSubject" class="form-control" placeholder="Пошук за назвою..." />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-bold">Викладач:</label>
+            <input type="text" name="searchTeacher" class="form-control" placeholder="ПІБ викладача..." />
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary flex-grow-1">🔍 Знайти</button>
+            <a asp-action="Index" class="btn btn-secondary flex-grow-1">🔄 Очистити</a>
+        </div>
+    </div>
 </form>
 
 <br />
@@ -38,4 +51,6 @@
     </tbody>
 </table>
 
-<a href="/Lesson/Create" class="btn btn-success">Додати заняття</a>
+<a asp-action="Create" class="btn btn-success btn-lg shadow-sm px-4 rounded-pill mt-3">
+    ➕ Додати заняття
+</a>

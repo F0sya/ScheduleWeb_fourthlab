@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ScheduleWeb.Data;
 using ScheduleWeb.Models;
@@ -13,7 +13,7 @@ public class LessonController : Controller
     }
 
     // ГОЛОВНА СТОРІНКА (Пошук та Розклад)
-    public async Task<IActionResult> Index(DateTime? searchDate, string subject, string teacher, string group)
+    public async Task<IActionResult> Index(DateTime? searchDate, string searchSubject, string searchTeacher, string searchGroup)
     {
         var query = _context.Lesson
             .Include(l => l.Teacher)
@@ -24,16 +24,24 @@ public class LessonController : Controller
         if (searchDate.HasValue)
             query = query.Where(l => l.Date.Date == searchDate.Value.Date);
 
-        if (!string.IsNullOrEmpty(subject))
-            query = query.Where(l => l.Subject.Contains(subject));
+        if (!string.IsNullOrEmpty(searchSubject))
+            query = query.Where(l => l.Subject.Contains(searchSubject));
 
-        if (!string.IsNullOrEmpty(teacher))
-            query = query.Where(l => l.Teacher.FullName.Contains(teacher));
+        if (!string.IsNullOrEmpty(searchTeacher))
+            query = query.Where(l => l.Teacher.FullName.Contains(searchTeacher));
 
-        if (!string.IsNullOrEmpty(group))
-            query = query.Where(l => l.Group.Name.Contains(group));
+        if (!string.IsNullOrEmpty(searchGroup))
+            query = query.Where(l => l.Group.Name.Contains(searchGroup));
 
         return View(await query.ToListAsync());
+    }
+
+    // СТОРІНКА ДОДАВАННЯ (GET)
+    public async Task<IActionResult> Create()
+    {
+        ViewBag.Teachers = await _context.Teachers.ToListAsync();
+        ViewBag.Groups = await _context.StudyGroups.ToListAsync();
+        return View();
     }
 
     // ДОДАВАННЯ ЗАНЯТТЯ (Логіка об'єднання груп для лекцій)
