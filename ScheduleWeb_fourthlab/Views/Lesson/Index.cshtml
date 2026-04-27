@@ -1,0 +1,41 @@
+﻿@model IEnumerable<ScheduleWeb.Models.Lesson>
+
+<h2>Розклад занять</h2>
+
+<form method="get" action="/Lesson/Index">
+    <label>Дата: <input type="date" name="searchDate" /></label>
+    <label>Предмет: <input type="text" name="searchSubject" /></label>
+    <label>Викладач: <input type="text" name="searchTeacher" /></label>
+    <button type="submit" class="btn btn-primary">Знайти</button>
+    <a href="/Lesson/Index" class="btn btn-secondary">Очистити</a>
+</form>
+
+<br />
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Дата</th>
+            <th>Час</th>
+            <th>Предмет</th>
+            <th>Аудиторія</th>
+            <th>Викладач</th>
+            <th>Група</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Date.ToShortDateString()</td>
+                <td>@item.Time</td>
+                <td>@item.Subject</td>
+                <td>@item.Room</td>
+                <td>@item.Teacher?.FullName</td>
+                <td>@item.Group?.Name</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a href="/Lesson/Create" class="btn btn-success">Додати заняття</a>
