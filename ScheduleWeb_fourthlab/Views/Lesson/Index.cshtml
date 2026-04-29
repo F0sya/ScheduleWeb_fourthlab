@@ -41,7 +41,8 @@
                     <th>Аудиторія</th>
                     <th>Викладач</th>
                     <th>Група</th>
-                    <th class="pe-4 text-center">Тип</th>
+                    <th class="text-center">Тип</th>
+                    <th class="pe-4 text-center">Дії</th>
                 </tr>
             </thead>
             <tbody>
@@ -54,10 +55,22 @@
                         <td>@item.Room</td>
                         <td>@item.Teacher?.FullName</td>
                         <td>@item.Group?.Name</td>
-                        <td class="pe-4 text-center">
+                        <td class="text-center">
                             @if (item.LessonType == "Лекція") { <span class="badge bg-info text-white">Лекція</span> }
                             else if (item.LessonType == "Практика") { <span class="badge bg-warning text-dark">Практика</span> }
                             else { <span class="badge bg-secondary">@item.LessonType</span> }
+                        </td>
+                        <td class="pe-4 text-center">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    ✏️ Редагувати
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Ви впевнені, що хочете видалити це заняття?')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                        🗑️ Видалити
+                                    </button>
+                                </form>
+                            </div>
                         </td>
                     </tr>
                 }

@@ -247,4 +247,43 @@ public class LessonController : Controller
         }
         return RedirectToAction(nameof(Dictionaries));
     }
+    // РЕДАГУВАННЯ (GET)
+    public async Task<IActionResult> Edit(int id)
+    {
+        var lesson = await _context.Lessons.FindAsync(id);
+        if (lesson == null) return NotFound();
+
+        ViewBag.Teachers = await _context.Teachers.ToListAsync();
+        ViewBag.Groups = await _context.StudyGroups.ToListAsync();
+        return View(lesson);
+    }
+
+    // РЕДАГУВАННЯ (POST)
+    [HttpPost]
+    public async Task<IActionResult> Edit(Lesson model)
+    {
+        if (ModelState.IsValid)
+        {
+            _context.Update(model);
+            await _context.SaveChangesAsync();
+            return RedirectToAction(nameof(Index));
+        }
+
+        ViewBag.Teachers = await _context.Teachers.ToListAsync();
+        ViewBag.Groups = await _context.StudyGroups.ToListAsync();
+        return View(model);
+    }
+
+    // ВИДАЛЕННЯ
+    [HttpPost]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var lesson = await _context.Lessons.FindAsync(id);
+        if (lesson != null)
+        {
+            _context.Lessons.Remove(lesson);
+            await _context.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Index));
+    }
 }
