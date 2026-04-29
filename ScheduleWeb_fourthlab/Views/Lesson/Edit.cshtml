@@ -40,14 +40,14 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label asp-for="StudyGroupId" class="form-label fw-semibold">Група</label>
-                        <select asp-for="StudyGroupId" class="form-select form-select-lg rounded-3 shadow-sm" required>
-                            <option value="">-- Оберіть групу --</option>
+                        <label class="form-label fw-semibold">Групи (можна обрати декілька)</label>
+                        <select name="selectedGroups" class="form-select form-select-lg rounded-3 shadow-sm" multiple required>
                             @foreach (var group in ViewBag.Groups as List<ScheduleWeb.Models.StudyGroup>)
                             {
-                                <option value="@group.Id">@group.Name</option>
+                                <option value="@group.Id" selected="@(Model.Groups.Any(g => g.Id == group.Id))">@group.Name</option>
                             }
                         </select>
+                        <small class="text-muted">Утримуйте Ctrl (або Cmd), щоб обрати декілька груп</small>
                     </div>
 
                     <div class="col-md-4">

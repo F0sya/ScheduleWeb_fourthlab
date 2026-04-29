@@ -19,7 +19,7 @@ public class LessonController : Controller
     {
         var query = _context.Lessons
             .Include(l => l.Teacher)
-            .Include(l => l.Group)
+            .Include(l => l.Groups)
             .AsQueryable();
 
         if (searchDate.HasValue)
@@ -32,7 +32,7 @@ public class LessonController : Controller
             query = query.Where(l => l.Teacher.FullName.Contains(searchTeacher));
 
         if (!string.IsNullOrEmpty(searchGroup))
-            query = query.Where(l => l.Group.Name.Contains(searchGroup));
+            query = query.Where(l => l.Groups.Any(g => g.Name.Contains(searchGroup)));
 
         ViewBag.SearchDate = searchDate?.ToString("yyyy-MM-dd");
         ViewBag.SearchSubject = searchSubject;
@@ -52,31 +52,11 @@ public class LessonController : Controller
 
     // ДОДАВАННЯ ЗАНЯТТЯ
     [HttpPost]
-    public async Task<IActionResult> Create(Lesson model)
+    public async Task<IActionResult> Create(Lesson model, int[] selectedGroups)
     {
-        if (model.LessonType == "Лекція")
+        if (selectedGroups != null)
         {
-            var existing = await _context.Lessons
-                .Include(l => l.Group)
-                .FirstOrDefaultAsync(l =>
-                    l.Date.Date == model.Date.Date &&
-                    l.Time == model.Time &&
-                    l.Subject == model.Subject &&
-                    l.TeacherId == model.TeacherId &&
-                    l.LessonType == "Лекція" &&
-                    l.Room == model.Room &&
-                    l.Week == model.Week);
-
-            if (existing != null)
-            {
-                var newGroup = await _context.StudyGroups.FindAsync(model.StudyGroupId);
-                if (newGroup != null && !existing.Group.Name.Contains(newGroup.Name))
-                {
-                    existing.Group.Name += ", " + newGroup.Name;
-                    await _context.SaveChangesAsync();
-                }
-                return RedirectToAction(nameof(Index));
-            }
+            model.Groups = await _context.StudyGroups.Where(g => selectedGroups.Contains(g.Id)).ToListAsync();
         }
 
         _context.Add(model);
@@ -89,7 +69,7 @@ public class LessonController : Controller
     {
         var query = _context.Lessons
             .Include(l => l.Teacher)
-            .Include(l => l.Group)
+            .Include(l => l.Groups)
             .AsQueryable();
 
         if (searchDate.HasValue)
@@ -99,7 +79,7 @@ public class LessonController : Controller
         if (!string.IsNullOrEmpty(searchTeacher))
             query = query.Where(l => l.Teacher.FullName.Contains(searchTeacher));
         if (!string.IsNullOrEmpty(searchGroup))
-            query = query.Where(l => l.Group.Name.Contains(searchGroup));
+            query = query.Where(l => l.Groups.Any(g => g.Name.Contains(searchGroup)));
 
         var lessons = await query.ToListAsync();
 
@@ -123,7 +103,7 @@ public class LessonController : Controller
                 worksheet.Cell(i + 2, 2).Value = lessons[i].Subject;
                 worksheet.Cell(i + 2, 3).Value = lessons[i].Time;
                 worksheet.Cell(i + 2, 4).Value = lessons[i].Room;
-                worksheet.Cell(i + 2, 5).Value = lessons[i].Group?.Name;
+                worksheet.Cell(i + 2, 5).Value = string.Join(", ", lessons[i].Groups.Select(g => g.Name));
                 worksheet.Cell(i + 2, 6).Value = lessons[i].Week;
                 worksheet.Cell(i + 2, 7).Value = lessons[i].Teacher?.FullName;
                 worksheet.Cell(i + 2, 8).Value = lessons[i].LessonType;
@@ -183,34 +163,35 @@ public class LessonController : Controller
                         await _context.SaveChangesAsync();
                     }
 
-                    if (lessonType == "Лекція")
-                    {
-                        var existing = await _context.Lessons.FirstOrDefaultAsync(l =>
-                            l.Date == date && l.Subject == subject && l.Time == time && 
-                            l.Room == room && l.Week == week && 
-                            l.TeacherId == teacher.Id && l.LessonType == "Лекція");
-
-                        if (existing != null)
-                        {
-                            if (!existing.Group.Name.Contains(group.Name))
-                            {
-                                existing.Group.Name += ", " + group.Name;
-                            }
-                            continue;
-                        }
-                    }
-
-                    _context.Lessons.Add(new Lesson
+                    var lesson = new Lesson
                     {
                         Date = date,
                         Subject = subject,
                         Time = time,
                         Room = room,
-                        StudyGroupId = group.Id,
                         Week = week,
                         TeacherId = teacher.Id,
-                        LessonType = lessonType
-                    });
+                        LessonType = lessonType,
+                        Groups = new List<StudyGroup>()
+                    };
+
+                    if (!string.IsNullOrWhiteSpace(groupName))
+                    {
+                        var names = groupName.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        foreach (var name in names)
+                        {
+                            var g = await _context.StudyGroups.FirstOrDefaultAsync(sg => sg.Name == name);
+                            if (g == null)
+                            {
+                                g = new StudyGroup { Name = name };
+                                _context.StudyGroups.Add(g);
+                                await _context.SaveChangesAsync();
+                            }
+                            lesson.Groups.Add(g);
+                        }
+                    }
+
+                    _context.Lessons.Add(lesson);
                 }
                 await _context.SaveChangesAsync();
             }
@@ -250,7 +231,10 @@ public class LessonController : Controller
     // РЕДАГУВАННЯ (GET)
     public async Task<IActionResult> Edit(int id)
     {
-        var lesson = await _context.Lessons.FindAsync(id);
+        var lesson = await _context.Lessons
+            .Include(l => l.Groups)
+            .FirstOrDefaultAsync(l => l.Id == id);
+            
         if (lesson == null) return NotFound();
 
         ViewBag.Teachers = await _context.Teachers.ToListAsync();
@@ -260,16 +244,32 @@ public class LessonController : Controller
 
     // РЕДАГУВАННЯ (POST)
     [HttpPost]
-    public async Task<IActionResult> Edit(Lesson model)
+    public async Task<IActionResult> Edit(Lesson model, int[] selectedGroups)
     {
         ModelState.Remove("Teacher");
-        ModelState.Remove("Group");
+        ModelState.Remove("Groups");
 
         if (ModelState.IsValid)
         {
-            _context.Update(model);
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            var existing = await _context.Lessons
+                .Include(l => l.Groups)
+                .FirstOrDefaultAsync(l => l.Id == model.Id);
+
+            if (existing != null)
+            {
+                _context.Entry(existing).CurrentValues.SetValues(model);
+                
+                existing.Groups.Clear();
+                if (selectedGroups != null)
+                {
+                    existing.Groups = await _context.StudyGroups
+                        .Where(g => selectedGroups.Contains(g.Id))
+                        .ToListAsync();
+                }
+
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         ViewBag.Teachers = await _context.Teachers.ToListAsync();

@@ -1,4 +1,4 @@
-﻿namespace ScheduleWeb.Models
+namespace ScheduleWeb.Models
 {
     public class Teacher
     {
@@ -28,7 +28,6 @@
         public int TeacherId { get; set; }
         public Teacher Teacher { get; set; }
 
-        public int StudyGroupId { get; set; }
-        public StudyGroup Group { get; set; }
+        public List<StudyGroup> Groups { get; set; } = new List<StudyGroup>();
     }
 }

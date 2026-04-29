@@ -54,7 +54,7 @@
                         <td class="fw-semibold">@item.Subject</td>
                         <td>@item.Room</td>
                         <td>@item.Teacher?.FullName</td>
-                        <td>@item.Group?.Name</td>
+                        <td>@string.Join(", ", item.Groups.Select(g => g.Name))</td>
                         <td class="text-center">
                             @if (item.LessonType == "Лекція") { <span class="badge bg-info text-white">Лекція</span> }
                             else if (item.LessonType == "Практика") { <span class="badge bg-warning text-dark">Практика</span> }
