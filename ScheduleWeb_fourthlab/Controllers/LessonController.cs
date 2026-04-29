@@ -54,9 +54,10 @@ public class LessonController : Controller
     [HttpPost]
     public async Task<IActionResult> Create(Lesson model, int[] selectedGroups)
     {
-        if (selectedGroups != null)
+        if (selectedGroups != null && selectedGroups.Length > 0)
         {
-            model.Groups = await _context.StudyGroups.Where(g => selectedGroups.Contains(g.Id)).ToListAsync();
+            var groupIds = selectedGroups.ToList();
+            model.Groups = await _context.StudyGroups.Where(g => groupIds.Contains(g.Id)).ToListAsync();
         }
 
         _context.Add(model);
@@ -260,10 +261,11 @@ public class LessonController : Controller
                 _context.Entry(existing).CurrentValues.SetValues(model);
                 
                 existing.Groups.Clear();
-                if (selectedGroups != null)
+                if (selectedGroups != null && selectedGroups.Length > 0)
                 {
+                    var groupIds = selectedGroups.ToList();
                     existing.Groups = await _context.StudyGroups
-                        .Where(g => selectedGroups.Contains(g.Id))
+                        .Where(g => groupIds.Contains(g.Id))
                         .ToListAsync();
                 }
 
