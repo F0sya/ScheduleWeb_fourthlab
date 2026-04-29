@@ -262,6 +262,9 @@ public class LessonController : Controller
     [HttpPost]
     public async Task<IActionResult> Edit(Lesson model)
     {
+        ModelState.Remove("Teacher");
+        ModelState.Remove("Group");
+
         if (ModelState.IsValid)
         {
             _context.Update(model);
