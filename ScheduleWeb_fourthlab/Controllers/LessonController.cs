@@ -14,16 +14,26 @@ public class LessonController : Controller
         _context = context;
     }
 
-    // ГОЛОВНА СТОРІНКА (Пошук та Розклад)
-    public async Task<IActionResult> Index(DateTime? searchDate, string searchSubject, string searchTeacher, string searchGroup)
+    public async Task<IActionResult> Index(string searchDate, string searchSubject, string searchTeacher, string searchGroup, string searchTime, string searchRoom, int? searchWeek, string searchLessonType)
     {
         var query = _context.Lessons
             .Include(l => l.Teacher)
             .Include(l => l.Groups)
             .AsQueryable();
 
-        if (searchDate.HasValue)
-            query = query.Where(l => l.Date.Date == searchDate.Value.Date);
+        DateTime? parsedDate = null;
+        if (!string.IsNullOrEmpty(searchDate))
+        {
+            if (searchDate.ToLower() == "сьогодні") parsedDate = DateTime.Today;
+            else if (searchDate.ToLower() == "завтра") parsedDate = DateTime.Today.AddDays(1);
+            else if (DateTime.TryParseExact(searchDate, new[] { "dd.MM.yyyy", "yyyy-MM-dd", "MM/dd/yyyy" }, null, System.Globalization.DateTimeStyles.None, out var d))
+            {
+                parsedDate = d;
+            }
+        }
+
+        if (parsedDate.HasValue)
+            query = query.Where(l => l.Date.Date == parsedDate.Value.Date);
 
         if (!string.IsNullOrEmpty(searchSubject))
             query = query.Where(l => l.Subject.Contains(searchSubject));
@@ -34,15 +44,30 @@ public class LessonController : Controller
         if (!string.IsNullOrEmpty(searchGroup))
             query = query.Where(l => l.Groups.Any(g => g.Name.Contains(searchGroup)));
 
-        ViewBag.SearchDate = searchDate?.ToString("yyyy-MM-dd");
+        if (!string.IsNullOrEmpty(searchTime))
+            query = query.Where(l => l.Time.Contains(searchTime));
+
+        if (!string.IsNullOrEmpty(searchRoom))
+            query = query.Where(l => l.Room.Contains(searchRoom));
+
+        if (searchWeek.HasValue)
+            query = query.Where(l => l.Week == searchWeek.Value);
+
+        if (!string.IsNullOrEmpty(searchLessonType))
+            query = query.Where(l => l.LessonType.Contains(searchLessonType));
+
+        ViewBag.SearchDate = searchDate;
         ViewBag.SearchSubject = searchSubject;
         ViewBag.SearchTeacher = searchTeacher;
         ViewBag.SearchGroup = searchGroup;
+        ViewBag.SearchTime = searchTime;
+        ViewBag.SearchRoom = searchRoom;
+        ViewBag.SearchWeek = searchWeek;
+        ViewBag.SearchLessonType = searchLessonType;
 
         return View(await query.ToListAsync());
     }
 
-    // СТОРІНКА ДОДАВАННЯ (GET)
     public async Task<IActionResult> Create()
     {
         ViewBag.Teachers = await _context.Teachers.ToListAsync();
@@ -50,7 +75,6 @@ public class LessonController : Controller
         return View();
     }
 
-    // ДОДАВАННЯ ЗАНЯТТЯ
     [HttpPost]
     public async Task<IActionResult> Create(Lesson model, int[] selectedGroups)
     {
@@ -65,22 +89,40 @@ public class LessonController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // ЕКСПОРТ В EXCEL
-    public async Task<IActionResult> Export(DateTime? searchDate, string searchSubject, string searchTeacher, string searchGroup)
+    public async Task<IActionResult> Export(string searchDate, string searchSubject, string searchTeacher, string searchGroup, string searchTime, string searchRoom, int? searchWeek, string searchLessonType)
     {
         var query = _context.Lessons
             .Include(l => l.Teacher)
             .Include(l => l.Groups)
             .AsQueryable();
 
-        if (searchDate.HasValue)
-            query = query.Where(l => l.Date.Date == searchDate.Value.Date);
+        DateTime? parsedDate = null;
+        if (!string.IsNullOrEmpty(searchDate))
+        {
+            if (searchDate.ToLower() == "сьогодні") parsedDate = DateTime.Today;
+            else if (searchDate.ToLower() == "завтра") parsedDate = DateTime.Today.AddDays(1);
+            else if (DateTime.TryParseExact(searchDate, new[] { "dd.MM.yyyy", "yyyy-MM-dd", "MM/dd/yyyy" }, null, System.Globalization.DateTimeStyles.None, out var d))
+            {
+                parsedDate = d;
+            }
+        }
+
+        if (parsedDate.HasValue)
+            query = query.Where(l => l.Date.Date == parsedDate.Value.Date);
         if (!string.IsNullOrEmpty(searchSubject))
             query = query.Where(l => l.Subject.Contains(searchSubject));
         if (!string.IsNullOrEmpty(searchTeacher))
             query = query.Where(l => l.Teacher.FullName.Contains(searchTeacher));
         if (!string.IsNullOrEmpty(searchGroup))
             query = query.Where(l => l.Groups.Any(g => g.Name.Contains(searchGroup)));
+        if (!string.IsNullOrEmpty(searchTime))
+            query = query.Where(l => l.Time.Contains(searchTime));
+        if (!string.IsNullOrEmpty(searchRoom))
+            query = query.Where(l => l.Room.Contains(searchRoom));
+        if (searchWeek.HasValue)
+            query = query.Where(l => l.Week == searchWeek.Value);
+        if (!string.IsNullOrEmpty(searchLessonType))
+            query = query.Where(l => l.LessonType.Contains(searchLessonType));
 
         var lessons = await query.ToListAsync();
 
@@ -121,7 +163,6 @@ public class LessonController : Controller
         }
     }
 
-    // ІМПОРТ З EXCEL
     [HttpPost]
     public async Task<IActionResult> Import(IFormFile file)
     {
@@ -141,20 +182,12 @@ public class LessonController : Controller
                     string subject = row.Cell(2).GetString();
                     string time = row.Cell(3).GetString();
                     string room = row.Cell(4).GetString();
-                    string groupName = row.Cell(5).GetString();
+                    string groupNamesStr = row.Cell(5).GetString();
                     int week = row.Cell(6).GetValue<int>();
                     string teacherName = row.Cell(7).GetString();
                     string lessonType = row.Cell(8).GetString();
 
                     DateTime.TryParseExact(dateStr, "dd.MM.yyyy", null, System.Globalization.DateTimeStyles.None, out DateTime date);
-
-                    var group = await _context.StudyGroups.FirstOrDefaultAsync(g => g.Name == groupName);
-                    if (group == null && !string.IsNullOrWhiteSpace(groupName))
-                    {
-                        group = new StudyGroup { Name = groupName };
-                        _context.StudyGroups.Add(group);
-                        await _context.SaveChangesAsync();
-                    }
 
                     var teacher = await _context.Teachers.FirstOrDefaultAsync(t => t.FullName == teacherName);
                     if (teacher == null && !string.IsNullOrWhiteSpace(teacherName))
@@ -164,6 +197,17 @@ public class LessonController : Controller
                         await _context.SaveChangesAsync();
                     }
 
+                    bool exists = await _context.Lessons.AnyAsync(l =>
+                        l.Date == date &&
+                        l.Subject == subject &&
+                        l.Time == time &&
+                        l.Room == room &&
+                        l.Week == week &&
+                        l.TeacherId == (teacher != null ? teacher.Id : 0) &&
+                        l.LessonType == lessonType);
+
+                    if (exists) continue;
+
                     var lesson = new Lesson
                     {
                         Date = date,
@@ -171,14 +215,14 @@ public class LessonController : Controller
                         Time = time,
                         Room = room,
                         Week = week,
-                        TeacherId = teacher.Id,
+                        TeacherId = teacher?.Id ?? 0,
                         LessonType = lessonType,
                         Groups = new List<StudyGroup>()
                     };
 
-                    if (!string.IsNullOrWhiteSpace(groupName))
+                    if (!string.IsNullOrWhiteSpace(groupNamesStr))
                     {
-                        var names = groupName.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                        var names = groupNamesStr.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                         foreach (var name in names)
                         {
                             var g = await _context.StudyGroups.FirstOrDefaultAsync(sg => sg.Name == name);
@@ -200,12 +244,73 @@ public class LessonController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // СЛОВНИКИ: ГРУПИ ТА ВИКЛАДАЧІ
+    [HttpPost]
+    public async Task<IActionResult> DeleteDuplicates()
+    {
+        var allLessons = await _context.Lessons
+            .Include(l => l.Teacher)
+            .Include(l => l.Groups)
+            .ToListAsync();
+        
+        var duplicates = allLessons
+            .GroupBy(l => new { 
+                Date = l.Date.Date, 
+                Subject = (l.Subject ?? "").Trim().ToLower(), 
+                Time = (l.Time ?? "").Trim().ToLower(), 
+                Room = (l.Room ?? "").Trim().ToLower(), 
+                Week = l.Week, 
+                TeacherName = (l.Teacher?.FullName ?? "").Trim().ToLower(), 
+                LessonType = (l.LessonType ?? "").Trim().ToLower(),
+                GroupNames = l.Groups != null && l.Groups.Any()
+                    ? string.Join(",", l.Groups.OrderBy(g => g.Name).Select(g => (g.Name ?? "").Trim().ToLower()))
+                    : "no-groups"
+            })
+            .Where(g => g.Count() > 1)
+            .SelectMany(g => g.Skip(1))
+            .ToList();
+
+        if (duplicates.Any())
+        {
+            _context.Lessons.RemoveRange(duplicates);
+            await _context.SaveChangesAsync();
+            TempData["Message"] = $"Видалено {duplicates.Count} дублікатів";
+        }
+        else
+        {
+            TempData["Message"] = "Дублікатів не знайдено";
+        }
+        
+        return RedirectToAction(nameof(Index));
+    }
+
     public async Task<IActionResult> Dictionaries()
     {
         ViewBag.Teachers = await _context.Teachers.ToListAsync();
         ViewBag.Groups = await _context.StudyGroups.ToListAsync();
         return View();
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> AddGroup(string name)
+    {
+        if (!string.IsNullOrWhiteSpace(name))
+        {
+            _context.StudyGroups.Add(new StudyGroup { Name = name });
+            await _context.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Dictionaries));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> DeleteGroup(int id)
+    {
+        var group = await _context.StudyGroups.FindAsync(id);
+        if (group != null)
+        {
+            _context.StudyGroups.Remove(group);
+            await _context.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Dictionaries));
     }
 
     [HttpPost]
@@ -220,16 +325,16 @@ public class LessonController : Controller
     }
 
     [HttpPost]
-    public async Task<IActionResult> AddGroup(string name)
+    public async Task<IActionResult> DeleteTeacher(int id)
     {
-        if (!string.IsNullOrWhiteSpace(name))
+        var teacher = await _context.Teachers.FindAsync(id);
+        if (teacher != null)
         {
-            _context.StudyGroups.Add(new StudyGroup { Name = name });
+            _context.Teachers.Remove(teacher);
             await _context.SaveChangesAsync();
         }
         return RedirectToAction(nameof(Dictionaries));
     }
-    // РЕДАГУВАННЯ (GET)
     public async Task<IActionResult> Edit(int id)
     {
         var lesson = await _context.Lessons
@@ -243,7 +348,6 @@ public class LessonController : Controller
         return View(lesson);
     }
 
-    // РЕДАГУВАННЯ (POST)
     [HttpPost]
     public async Task<IActionResult> Edit(Lesson model, int[] selectedGroups)
     {
@@ -279,7 +383,6 @@ public class LessonController : Controller
         return View(model);
     }
 
-    // ВИДАЛЕННЯ
     [HttpPost]
     public async Task<IActionResult> Delete(int id)
     {

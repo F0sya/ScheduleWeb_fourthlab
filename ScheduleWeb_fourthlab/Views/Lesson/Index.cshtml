@@ -1,5 +1,17 @@
 @model IEnumerable<ScheduleWeb.Models.Lesson>
 
+@{
+    ViewData["Title"] = "Розклад занять";
+}
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info alert-dismissible fade show rounded-4 shadow-sm border-0 mb-4" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i> @TempData["Message"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-primary">📅 Розклад занять</h2>
     <div>
@@ -13,29 +25,68 @@
     <div class="row g-3 align-items-end">
         <div class="col-md-3">
             <label class="form-label fw-semibold">Дата:</label>
-            <input type="date" name="searchDate" class="form-control rounded-3" value="@ViewBag.SearchDate" />
+            <input type="text" name="searchDate" class="form-control rounded-3" placeholder="дд.мм.рррр або 'сьогодні'" value="@ViewBag.SearchDate" />
         </div>
         <div class="col-md-3">
             <label class="form-label fw-semibold">Предмет:</label>
-            <input type="text" name="searchSubject" class="form-control rounded-3" placeholder="Пошук за назвою..." value="@ViewBag.SearchSubject" />
+            <input type="text" name="searchSubject" class="form-control rounded-3" placeholder="Назва предмета..." value="@ViewBag.SearchSubject" />
         </div>
         <div class="col-md-3">
             <label class="form-label fw-semibold">Викладач:</label>
             <input type="text" name="searchTeacher" class="form-control rounded-3" placeholder="ПІБ викладача..." value="@ViewBag.SearchTeacher" />
         </div>
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Група:</label>
+            <input type="text" name="searchGroup" class="form-control rounded-3" placeholder="Назва групи..." value="@ViewBag.SearchGroup" />
+        </div>
+        
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Час:</label>
+            <input type="text" name="searchTime" class="form-control rounded-3" placeholder="Напр. 08:30" value="@ViewBag.SearchTime" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Аудиторія:</label>
+            <input type="text" name="searchRoom" class="form-control rounded-3" placeholder="Номер..." value="@ViewBag.SearchRoom" />
+        </div>
+        <div class="col-md-2">
+            <label class="form-label fw-semibold">Тиждень:</label>
+            <input type="number" name="searchWeek" class="form-control rounded-3" placeholder="1-18" value="@ViewBag.SearchWeek" />
+        </div>
+        <div class="col-md-3">
+            <label class="form-label fw-semibold">Тип заняття:</label>
+            <select name="searchLessonType" class="form-select rounded-3">
+                <option value="">Усі типи</option>
+                <option value="Лекція" selected="@(ViewBag.SearchLessonType == "Лекція")">Лекція</option>
+                <option value="Практика" selected="@(ViewBag.SearchLessonType == "Практика")">Практика</option>
+                <option value="Лабораторна" selected="@(ViewBag.SearchLessonType == "Лабораторна")">Лабораторна</option>
+            </select>
+        </div>
         <div class="col-md-3 d-flex gap-2">
-            <button type="submit" class="btn btn-primary flex-grow-1 rounded-3">🔍 Знайти</button>
-            <a asp-action="Index" class="btn btn-secondary flex-grow-1 rounded-3">🔄 Очистити</a>
+            <button type="submit" class="btn btn-primary flex-grow-1 shadow-sm px-4 rounded-pill transition-all hover-scale">
+                🔍 Знайти
+            </button>
+            <a asp-action="Index" class="btn btn-secondary flex-grow-1 shadow-sm px-4 rounded-pill transition-all hover-scale">
+                🔄 Очистити
+            </a>
         </div>
     </div>
 </form>
+
+<div class="mb-4 d-flex justify-content-end">
+    <form asp-action="DeleteDuplicates" method="post" class="m-0">
+        <button type="submit" id="btn-delete-duplicates" class="btn btn-outline-danger shadow-sm px-4 rounded-pill transition-all hover-scale" title="Видалити повні дублікати">
+            🗑️ Видалити дублікати
+        </button>
+    </form>
+</div>
 
 <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
     <div class="card-body p-0">
         <table class="table table-hover mb-0 align-middle">
             <thead class="bg-primary text-white">
                 <tr>
-                    <th class="ps-4">Дата</th>
+                    <th class="ps-4">ID</th>
+                    <th>Дата</th>
                     <th>Час</th>
                     <th>Предмет</th>
                     <th>Аудиторія</th>
@@ -49,7 +100,10 @@
                 @foreach (var item in Model)
                 {
                     <tr>
-                        <td class="ps-4">@item.Date.ToString("dd.MM.yyyy")</td>
+                        <td class="ps-4">
+                            <span class="badge bg-light text-dark border">@item.Id</span>
+                        </td>
+                        <td>@item.Date.ToString("dd.MM.yyyy")</td>
                         <td><span class="badge bg-light text-dark border">@item.Time</span></td>
                         <td class="fw-semibold">@item.Subject</td>
                         <td>@item.Room</td>
@@ -89,6 +143,10 @@
        asp-route-searchSubject="@ViewBag.SearchSubject" 
        asp-route-searchTeacher="@ViewBag.SearchTeacher" 
        asp-route-searchGroup="@ViewBag.SearchGroup" 
+       asp-route-searchTime="@ViewBag.SearchTime" 
+       asp-route-searchRoom="@ViewBag.SearchRoom" 
+       asp-route-searchWeek="@ViewBag.SearchWeek" 
+       asp-route-searchLessonType="@ViewBag.SearchLessonType" 
        class="btn btn-outline-success btn-lg shadow-sm px-4 rounded-pill">
         📥 Експорт в Excel
     </a>
