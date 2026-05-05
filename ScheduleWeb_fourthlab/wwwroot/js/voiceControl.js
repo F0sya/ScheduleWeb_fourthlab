@@ -258,6 +258,10 @@ if (SpeechRecognition) {
         document.body.appendChild(indicator);
     }
 
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initVoice);
-    else initVoice();
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => {
+        if (!window.location.href.includes('VoiceTest')) initVoice();
+    });
+    else {
+        if (!window.location.href.includes('VoiceTest')) initVoice();
+    }
 }

@@ -1,0 +1,180 @@
+@{
+    ViewData["Title"] = "Живий Текст";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden bg-white">
+                <div class="card-header bg-dark text-white p-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h2 class="fw-bold mb-0">📝 Живий Текст (RAW Audio)</h2>
+                        <p class="text-white-50 mb-0">Фільтри шумозаглушення вимкнено для кращого запису</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <select id="lang-select" class="form-select form-select-sm rounded-pill border-0 px-3" style="width: 150px;">
+                            <option value="uk-UA" selected>🇺🇦 Українська</option>
+                            <option value="en-US">🇺🇸 English</option>
+                        </select>
+                        <button onclick="copyText()" class="btn btn-outline-light rounded-pill btn-sm px-3">Копіювати</button>
+                        <a asp-action="Index" class="btn btn-light rounded-pill btn-sm px-3">На головну</a>
+                    </div>
+                </div>
+                <div class="card-body p-0 position-relative">
+                    <div id="status-bar" class="bg-light p-2 text-center text-muted border-bottom" style="font-size: 0.8rem;">
+                        🎤 Очікую на запуск...
+                    </div>
+
+                    <div class="progress rounded-0" style="height: 5px;">
+                        <div id="vol-bar" class="progress-bar bg-success transition-all" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    
+                    <div id="paper" class="p-5" style="min-height: 500px; max-height: 600px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; line-height: 1.8; font-size: 1.25rem; position: relative;">
+                        <div id="start-overlay" class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-white bg-opacity-75" style="z-index: 10;">
+                            <button onclick="startRecording()" class="btn btn-primary btn-lg rounded-pill shadow-lg px-5 py-3">
+                                🎙️ ПОЧАТИ ЗАПИС (RAW)
+                            </button>
+                        </div>
+
+                        <span id="final-text" class="text-dark"></span>
+                        <span id="interim-text" class="text-primary opacity-50"></span>
+                        <div id="cursor" class="d-inline-block bg-primary ms-1" style="width: 3px; height: 1.2rem; vertical-align: middle; animation: blink 1s infinite;"></div>
+                    </div>
+
+                    <div id="error-msg" class="alert alert-danger m-3 d-none" role="alert"></div>
+
+                    <div class="card-footer bg-white p-4 border-top d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-3">
+                            <span class="badge bg-light text-dark border rounded-pill px-3">Слів: <span id="w-count">0</span></span>
+                            <span class="badge bg-light text-dark border rounded-pill px-3">Символів: <span id="c-count">0</span></span>
+                        </div>
+                        <button onclick="clearPaper()" class="btn btn-danger rounded-pill px-4">Очистити все</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    #paper {
+        background-image: linear-gradient(#f1f1f1 1.1rem, #ccc 1.2rem);
+        background-size: 100% 1.8rem;
+        background-attachment: local;
+        background-color: #fff;
+    }
+    @@keyframes blink { 50% { opacity: 0; } }
+</style>
+
+<script>
+    let finalTranscript = "";
+    let recognition = null;
+    let audioContext = null;
+    let analyser = null;
+
+    function clearPaper() {
+        finalTranscript = "";
+        document.getElementById('final-text').innerText = "";
+        document.getElementById('interim-text').innerText = "";
+        updateStats();
+    }
+
+    function copyText() {
+        const text = document.getElementById('final-text').innerText;
+        navigator.clipboard.writeText(text);
+        alert("Текст скопійовано!");
+    }
+
+    function updateStats() {
+        const text = document.getElementById('final-text').innerText;
+        document.getElementById('c-count').innerText = text.length;
+        document.getElementById('w-count').innerText = text.split(/\s+/).filter(w => w.length > 0).length;
+    }
+
+    function showError(msg) {
+        const err = document.getElementById('error-msg');
+        err.innerText = msg;
+        err.classList.remove('d-none');
+        setTimeout(() => err.classList.add('d-none'), 3000);
+    }
+
+    async function startRecording() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) return;
+
+        // Запитуємо мікрофон БЕЗ фільтрів (Raw Audio)
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                audio: {
+                    echoCancellation: false,
+                    noiseSuppression: false,
+                    autoGainControl: false,
+                    channelCount: 1
+                } 
+            });
+
+            // Візуалізація
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+            analyser.fftSize = 256;
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            function draw() {
+                if (!audioContext) return;
+                requestAnimationFrame(draw);
+                analyser.getByteFrequencyData(dataArray);
+                let average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+                document.getElementById('vol-bar').style.width = Math.min(average * 2.5, 100) + "%";
+            }
+            draw();
+        } catch (e) {
+            showError("Не вдалося отримати доступ до мікрофона.");
+        }
+
+        const lang = document.getElementById('lang-select').value;
+        if (recognition) recognition.stop();
+
+        recognition = new SpeechRecognition();
+        recognition.lang = lang;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        recognition.onresult = (event) => {
+            let interim = "";
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    finalTranscript += event.results[i][0].transcript + " ";
+                } else { interim += event.results[i][0].transcript; }
+            }
+            document.getElementById('final-text').innerText = finalTranscript;
+            document.getElementById('interim-text').innerText = interim;
+            updateStats();
+            document.getElementById('paper').scrollTop = document.getElementById('paper').scrollHeight;
+        };
+
+        recognition.onstart = () => {
+            document.getElementById('start-overlay').classList.add('d-none');
+            document.getElementById('status-bar').innerHTML = `<span class="text-success fw-bold">🟢 RAW MODE: ${lang.toUpperCase()} - ПРЯМИЙ ЗАПИС</span>`;
+        };
+
+        recognition.onerror = (event) => {
+            if (event.error === 'no-speech') {
+                try { recognition.stop(); } catch(e) {}
+                setTimeout(() => { try { recognition.start(); } catch(e) {} }, 100);
+            }
+        };
+
+        recognition.onend = () => {
+            if (document.getElementById('start-overlay').classList.contains('d-none')) {
+                try { recognition.start(); } catch(e) {}
+            }
+        };
+
+        try { recognition.start(); } catch(e) {}
+    }
+
+    document.getElementById('lang-select').onchange = () => {
+        if (!document.getElementById('start-overlay').classList.contains('d-none')) startRecording();
+    };
+</script>

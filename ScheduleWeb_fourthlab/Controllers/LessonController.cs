@@ -394,4 +394,9 @@ public class LessonController : Controller
         }
         return RedirectToAction(nameof(Index));
     }
+
+    public IActionResult VoiceTest()
+    {
+        return View();
+    }
 }
